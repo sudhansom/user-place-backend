@@ -33,5 +33,35 @@ const getAllUsers = async (req, res, next) => {
     res.json(users.map(u => u.toObject({getters: true})));
 }
 
+const deleteUser = async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+    if(!user){
+        return next(new HttpError('No such user Found', 401))
+    }
+    try{
+        await User.findByIdAndDelete(req.params.id);
+    }catch(err){
+        return next(new HttpError('Server error...', 500));
+    }
+
+    res.json({success: true, message: 'Successfully deleted user'});
+}
+
+const loginUser = async (req, res, next) => {
+    const { email, password } = req.body;
+    let user;
+    try {
+        user = await User.findOne({email: email});
+    }catch(err){
+        return next(new HttpError('Server error...', 500));
+    }
+    if(!user || user.password !== password){
+        return next(new HttpError('Wrong credentials.. try again', 401))
+    }
+    res.json({success: true, message: "login successfull..."})
+}
+
 exports.getAllUsers = getAllUsers;
 exports.signUp = signUp;
+exports.deleteUser = deleteUser;
+exports.loginUser = loginUser;
