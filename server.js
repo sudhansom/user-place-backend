@@ -4,6 +4,7 @@ const chalk = require('chalk');
 const dev = require('./config');
 const mongoDB = require('./config/db');
 const userRoute = require('./routes/user-route');
+const placeRoute = require('./routes/place-route');
 const HttpError = require('./models/http-error');
 
 const app = express();
@@ -11,6 +12,7 @@ const app = express();
 app.use(express.json());
 
 app.use('/api/users', userRoute);
+app.use('/api/places', placeRoute);
 
 const PORT = dev.app.port ;
 
