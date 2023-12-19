@@ -4,8 +4,18 @@ const Place = require('../models/place');
 const mongoose = require('mongoose');
 
 
-const getAllPlaces = (req, res, next)=>{
-    res.json({message: 'get all places.'})
+const getAllPlaces = async (req, res, next)=>{
+    let places;
+    try {
+        places = await Place.find()
+    }catch(err){
+        console.log(err);
+        return next(new HttpError("Error server....", 500));
+    }
+    if(!places.length){
+        return next(new HttpError("No place....", 402));
+    }
+    res.json( places);
 }
 
 const createPlace = async (req, res, next) => {
@@ -49,5 +59,33 @@ const createPlace = async (req, res, next) => {
 
 }
 
+const deletePlace = async (req, res, next) => {
+    const placeId = req.params.id;
+    let place;
+    try {
+        place = await Place.findById(placeId).populate('creator');
+    }catch(err){
+        return next(new HttpError("Something went wrong1....", 500));
+    }
+    if(!place){
+        return next(new HttpError("NO such place....", 404));
+    }
+    try{
+        const sess = await mongoose.startSession();
+        sess.startTransaction();
+        await place.deleteOne({session: sess});
+        place.creator.places.pull(place);
+        await place.creator.save({session: sess});
+        await sess.commitTransaction();
+
+    }catch(err){
+        console.log(err);
+        return next(new HttpError("Something went wrong....", 500));
+    }
+
+    res.json({success: true, message: "Successfully deleted a Place."})
+}
+
 exports.getAllPlaces = getAllPlaces;
 exports.createPlace = createPlace;
+exports.deletePlace = deletePlace;
