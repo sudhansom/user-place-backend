@@ -1,8 +1,16 @@
 const HttpError = require('../models/http-error');
 const User = require('../models/user');
+const bcrypt = require('bcryptjs');
 
 const signUp = async (req, res, next) => {
     const {name, email, password} = req.body;
+    let hashedPassword;
+    try {
+        hashedPassword = await bcrypt.hash(password, 12);
+    }catch(error){
+        const err = new HttpError('Something went wrong in server...', 500);
+        return next(err);
+       }
     let existUser;
    try{
     existUser = await User.find({email: email});
@@ -13,7 +21,7 @@ const signUp = async (req, res, next) => {
     const newUser = new User({
         name,
         email,
-        password,
+        password: hashedPassword,
         image: 'no image',
         places: []
     })
@@ -55,9 +63,18 @@ const loginUser = async (req, res, next) => {
     }catch(err){
         return next(new HttpError('Server error...', 500));
     }
-    if(!user || user.password !== password){
+    if(!user){
         return next(new HttpError('Wrong credentials.. try again', 401))
     }
+    let passwordMatched = false;
+    try{
+        passwordMatched = await bcrypt.compare(password, user.password);
+    }catch(error){
+        return next(new HttpError('Server error...', 500));
+   }
+   if(!passwordMatched){
+    return next(new HttpError('Wrong credentials.. try again', 401))
+   }
     res.json({success: true, message: "login successfull..."})
 }
 
