@@ -1,6 +1,8 @@
 const HttpError = require('../models/http-error');
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const dev = require('../config/index');
 
 const signUp = async (req, res, next) => {
     const {name, email, password} = req.body;
@@ -25,6 +27,14 @@ const signUp = async (req, res, next) => {
         image: 'no image',
         places: []
     })
+    let token;
+    try{
+        token = jwt.sign({userId: newUser.id, email: newUser.email}, dev.app.jwtSecretKey, {expiresIn: '1h'});
+    }catch(error){
+        console.log(error);
+        const err = new HttpError('Could not sign up try again...', 500);
+        return next(err);
+       }
     try{
         await newUser.save();
        }catch(error){
@@ -32,7 +42,7 @@ const signUp = async (req, res, next) => {
         const err = new HttpError('Could not sign up try again...', 500);
         return next(err);
        }
-    res.json({message: 'saved user'});
+    res.json({userId: newUser.id, email: newUser.email, token});
 }
 
 const getAllUsers = async (req, res, next) => {
@@ -75,7 +85,16 @@ const loginUser = async (req, res, next) => {
    if(!passwordMatched){
     return next(new HttpError('Wrong credentials.. try again', 401))
    }
-    res.json({success: true, message: "login successfull..."})
+   let token;
+   try {
+    token = jwt.sign({userId: user.id, email: user.email}, dev.app.jwtSecretKey, {expiresIn: '1h'});
+   }catch(error){
+        console.log(error);
+        const err = new HttpError('Could not login try again...', 500);
+        return next(err);
+       }
+
+     res.json({userId: user.id, email: user.email, token});
 }
 
 exports.getAllUsers = getAllUsers;
