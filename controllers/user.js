@@ -57,7 +57,8 @@ const deleteUser = async (req, res, next) => {
         return next(new HttpError('No such user Found', 401))
     }
     try{
-        await User.findByIdAndDelete(req.params.id);
+        console.log(req.userData);
+        //await User.findByIdAndDelete(req.params.id);
     }catch(err){
         return next(new HttpError('Server error...', 500));
     }
